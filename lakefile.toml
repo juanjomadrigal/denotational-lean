@@ -1,0 +1,10 @@
+name = "denotational-lean"
+version = "0.1.0"
+defaultTargets = ["denotational-lean"]
+
+[[lean_lib]]
+name = "DenotationalLean"
+
+[[lean_exe]]
+name = "denotational-lean"
+root = "Main"
