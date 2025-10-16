@@ -1,6 +1,7 @@
 
 import DenotationalLean.Imp
 import DenotationalLean.ADeriv
+import DenotationalLean.State
 
 abbrev BConfig := Bexp × State
 
