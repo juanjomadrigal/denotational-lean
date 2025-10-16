@@ -11,7 +11,7 @@ inductive Aexp : Type where
 inductive Bexp : Type where
   | Bool : Bool -> Bexp
   | Eq : Aexp -> Aexp -> Bexp
-  | Ge : Aexp -> Aexp -> Bexp
+  | Le : Aexp -> Aexp -> Bexp
   | Not : Bexp -> Bexp
   | And : Bexp -> Bexp -> Bexp
   | Or  : Bexp -> Bexp -> Bexp

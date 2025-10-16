@@ -29,5 +29,5 @@ example : a_deriv
   have h := a_deriv.add hi5 h79
   assumption
 
-def a_equiv (a b : Aexp) : Prop :=
-  ∀ (n : Nat) (σ : State) , (a_deriv (a,σ) n) <-> (a_deriv (b,σ) n)
+def a_equiv (a0 a1 : Aexp) : Prop :=
+  ∀ (n : Nat) (σ : State) , (a_deriv (a0,σ) n) <-> (a_deriv (a1,σ) n)
