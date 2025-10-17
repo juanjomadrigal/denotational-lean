@@ -39,3 +39,29 @@ def aux (σ σ' : State) (hh : c_deriv (Com.While (Bexp.Bool true) Com.Skip, σ)
 example : ¬ ∃ (σ σ' : State) , Nonempty (c_deriv (Com.While (Bexp.Bool true) Com.Skip, σ) σ') := by
   intro ⟨σ,σ',⟨h⟩⟩
   exact aux σ σ' h
+
+/-! # 2.5 A simple proof -/
+
+/- Proposition 2.8 -/
+
+example : c_equiv (Com.While b c) (Com.Ite b (Com.Seq c (Com.While b c)) Com.Skip) := by
+  let w := Com.While b c
+  intro σ σ'
+  apply Iff.intro
+  . intro ⟨d⟩
+    apply Nonempty.intro
+    cases d with
+    | while_false bd => exact c_deriv.ite_false bd c_deriv.skip
+    | while_true bd cd wcd =>
+      let h : c_deriv (Com.Seq c (Com.While b c), σ) σ' := c_deriv.seq cd wcd
+      exact c_deriv.ite_true bd h
+  . intro ⟨d⟩
+    apply Nonempty.intro
+    cases d with
+    | ite_false bd cd =>
+      have h : σ = σ' := by cases cd; grind
+      simp [<-h]
+      exact c_deriv.while_false bd
+    | ite_true bd cd =>
+      cases cd with
+      | seq cd0 cd1 => exact c_deriv.while_true bd cd0 cd1
