@@ -19,6 +19,6 @@ inductive Bexp : Type where
 inductive Com : Type where
   | Skip : Com
   | Assing : Loc -> Aexp -> Com
-  | Then : Com -> Com -> Com
+  | Seq : Com -> Com -> Com
   | Ite : Bexp -> Com -> Com -> Com
   | While : Bexp -> Com -> Com
