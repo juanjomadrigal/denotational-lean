@@ -2,6 +2,8 @@
 import DenotationalLean.Imp
 import DenotationalLean.State
 
+/-! # 2.2 The evaluation of arithmetic expressions -/
+
 abbrev Config := Aexp × State
 
 inductive a_deriv : Config -> Nat -> Prop
@@ -11,6 +13,8 @@ inductive a_deriv : Config -> Nat -> Prop
   | sub {a0 n0 a1 n1 σ} : a_deriv (a0,σ) n0 -> a_deriv (a1,σ) n1 -> a_deriv (Aexp.Sub a0 a1,σ) (n0-n1)
   | mul {a0 n0 a1 n1 σ} : a_deriv (a0,σ) n0 -> a_deriv (a1,σ) n1 -> a_deriv (Aexp.Mul a0 a1,σ) (n0*n1)
 
+
+/- example : ⟨(Init + 5) + (7 + 9), σ_0⟩ -> 21 -/
 example : a_deriv
     (Aexp.Add
       (Aexp.Add (Aexp.Loc "Init") (Aexp.Nat 5))

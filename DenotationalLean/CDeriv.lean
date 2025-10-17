@@ -4,6 +4,8 @@ import DenotationalLean.ADeriv
 import DenotationalLean.BDeriv
 import DenotationalLean.State
 
+/-! # 2.4 The execution of commands -/
+
 abbrev CConfig := Com × State
 
 -- fixme : target should be Prop, but it then fails to show termination in the example below
@@ -21,6 +23,8 @@ def c_equiv (c0 c1 : Com) : Prop :=
   ∀ (σ σ': State) , Nonempty (c_deriv (c0,σ) σ') <-> Nonempty (c_deriv (c1,σ) σ')
 -- def c_equiv (c0 c1 : Com) : Prop :=
 --   ∀ (σ σ': State) , (c_deriv (c0,σ) σ') <-> (c_deriv (c1,σ) σ')
+
+/- example: ⟨while true do skip, σ⟩ -> σ' is not achievable  -/
 
 -- fixme : this definition should be inside the example below,
 -- but then it's tricky to make the recursive definition

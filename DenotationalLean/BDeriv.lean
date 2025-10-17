@@ -3,6 +3,8 @@ import DenotationalLean.Imp
 import DenotationalLean.ADeriv
 import DenotationalLean.State
 
+/-! # 2.3 The evaluation of boolean expressions -/
+
 abbrev BConfig := Bexp × State
 
 inductive b_deriv : BConfig -> Bool -> Prop
