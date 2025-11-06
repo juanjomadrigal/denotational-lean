@@ -35,3 +35,30 @@ example : a_deriv
 
 def a_equiv (a0 a1 : Aexp) : Prop :=
   ∀ (n : Nat) (σ : State) , (a_deriv (a0,σ) n) <-> (a_deriv (a1,σ) n)
+
+/- Proposition 3.3 -/
+
+-- fixme : simplify
+def a_unique (a : Aexp) (σ : State) : a_deriv (a,σ) n0 ∧ a_deriv (a,σ) n1 -> n0 = n1 := by
+  intro ⟨h0,h1⟩
+  cases a with
+  | Nat n => cases h0; cases h1; trivial
+  | Loc l => cases h0; cases h1; trivial
+  | Add a0 a1 => cases h0 with
+    | add h00 h01 => cases h1 with
+      | add h10 h11 =>
+        have f0 := a_unique a0 σ ⟨h00,h10⟩
+        have f1 := a_unique a1 σ ⟨h01,h11⟩
+        grind;
+  | Sub a0 a1 => cases h0 with
+    | sub h00 h01 => cases h1 with
+      | sub h10 h11 =>
+        have f0 := a_unique a0 σ ⟨h00,h10⟩
+        have f1 := a_unique a1 σ ⟨h01,h11⟩
+        grind;
+  | Mul a0 a1 => cases h0 with
+    | mul h00 h01 => cases h1 with
+      | mul h10 h11 =>
+        have f0 := a_unique a0 σ ⟨h00,h10⟩
+        have f1 := a_unique a1 σ ⟨h01,h11⟩
+        grind;
