@@ -8,8 +8,7 @@ import DenotationalLean.State
 
 abbrev CConfig := Com × State
 
--- fixme : target should be Prop, but it then fails to show termination in the example below
-inductive c_deriv : CConfig -> State -> Type
+inductive c_deriv : CConfig -> State -> Prop
   | skip {σ} : c_deriv (Com.Skip, σ) σ
   | assign {a n l σ} : a_deriv (a, σ) n -> c_deriv (Com.Assing l a, σ) ((l,n)::σ)
   | seq {c0 c1 σ σ' σ''} : c_deriv (c0,σ) σ'' -> c_deriv (c1,σ'') σ' -> c_deriv (Com.Seq c0 c1, σ) σ'
@@ -18,27 +17,25 @@ inductive c_deriv : CConfig -> State -> Type
   | while_false {b c σ} : b_deriv (b,σ) false -> c_deriv (Com.While b c, σ) σ
   | while_true {b c σ σ' σ''} : b_deriv (b,σ) true -> c_deriv (c, σ) σ'' -> c_deriv (Com.While b c, σ'') σ' -> c_deriv (Com.While b c, σ) σ'
 
--- fixme : remove Nonempty when c_deriv is Prop
 def c_equiv (c0 c1 : Com) : Prop :=
-  ∀ (σ σ': State) , Nonempty (c_deriv (c0,σ) σ') <-> Nonempty (c_deriv (c1,σ) σ')
--- def c_equiv (c0 c1 : Com) : Prop :=
---   ∀ (σ σ': State) , (c_deriv (c0,σ) σ') <-> (c_deriv (c1,σ) σ')
+  ∀ (σ σ': State) , c_deriv (c0,σ) σ' <-> c_deriv (c1,σ) σ'
 
 /- example: ⟨while true do skip, σ⟩ -> σ' is not achievable  -/
 
--- fixme : this definition should be inside the example below,
--- but then it's tricky to make the recursive definition
-def aux (σ σ' : State) (hh : c_deriv (Com.While (Bexp.Bool true) Com.Skip, σ) σ') : False :=
-  match hh with
-    | c_deriv.while_false bd => by cases bd
-    | @c_deriv.while_true _ _ σ σ' σ'' _ cd wcd => by
-      have h : σ = σ'' := by cases cd; grind
-      simp [<-h] at wcd
-      exact aux σ σ' wcd
-
-example : ¬ ∃ (σ σ' : State) , Nonempty (c_deriv (Com.While (Bexp.Bool true) Com.Skip, σ) σ') := by
-  intro ⟨σ,σ',⟨h⟩⟩
-  exact aux σ σ' h
+example : ¬ ∃ (σ σ' : State) , c_deriv (Com.While (Bexp.Bool true) Com.Skip, σ) σ' := by
+  intro ⟨σ,σ',h⟩
+  generalize hcfg : (Com.While (Bexp.Bool true) Com.Skip, σ) = cfg
+  rw [hcfg] at h
+  induction h with
+  | skip | assign | seq | ite_true | ite_false => grind
+  | while_false bd =>
+    simp only [Prod.mk.injEq, Com.While.injEq] at hcfg
+    simp only [<-hcfg] at bd
+    nomatch bd
+  | @while_true _ _ _ _ σ'' _ cd _ _ ih =>
+    have h' : σ = σ'' := by cases cd <;> grind
+    simp only [Prod.mk.injEq, Com.While.injEq] at hcfg
+    simp [<-hcfg, h'] at ih
 
 /-! # 2.5 A simple proof -/
 
@@ -48,15 +45,13 @@ example : c_equiv (Com.While b c) (Com.Ite b (Com.Seq c (Com.While b c)) Com.Ski
   let w := Com.While b c
   intro σ σ'
   apply Iff.intro
-  . intro ⟨d⟩
-    apply Nonempty.intro
+  . intro d
     cases d with
     | while_false bd => exact c_deriv.ite_false bd c_deriv.skip
     | while_true bd cd wcd =>
       let h : c_deriv (Com.Seq c (Com.While b c), σ) σ' := c_deriv.seq cd wcd
       exact c_deriv.ite_true bd h
-  . intro ⟨d⟩
-    apply Nonempty.intro
+  . intro d
     cases d with
     | ite_false bd cd =>
       have h : σ = σ' := by cases cd; grind
