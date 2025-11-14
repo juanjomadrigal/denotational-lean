@@ -17,3 +17,29 @@ inductive b_deriv : BConfig -> Bool -> Prop
 
 def b_equiv (b0 b1 : Bexp) : Prop :=
   ∀ (t : Bool) (σ : State) , (b_deriv (b0,σ) t) <-> (b_deriv (b1,σ) t)
+
+/- Exercise 3.5 -/
+
+theorem b_unique (b : Bexp) (σ : State) :
+    ∀ (t0 t1 : Bool) , b_deriv (b,σ) t0 ∧ b_deriv (b,σ) t1 -> t0 = t1 := by
+  induction b <;>
+  intro t0 t1 <;> intro ⟨h0,h1⟩ <;>
+  cases h0 <;> cases h1 <;> grind [a_unique]
+
+def b_eval (b : Bexp) (σ : State) : Bool :=
+  match b with
+  | .Bool t => t
+  | .Eq a0 a1 => a_eval a0 σ == a_eval a1 σ
+  | .Le a0 a1 => a_eval a0 σ <= a_eval a1 σ
+  | .Not b => !(b_eval b σ)
+  | .And b0 b1 => b_eval b0 σ && b_eval b1 σ
+  | .Or  b0 b1 => b_eval b0 σ || b_eval b1 σ
+
+theorem b_eval_deriv (b : Bexp) (σ : State) : b_deriv (b,σ) (b_eval b σ) :=
+  match b with
+  | .Bool _ => b_deriv.bool
+  | .Eq a0 a1 => b_deriv.eq (a_eval_deriv a0 σ) (a_eval_deriv a1 σ)
+  | .Le a0 a1 => b_deriv.le (a_eval_deriv a0 σ) (a_eval_deriv a1 σ)
+  | .Not b => b_deriv.not (b_eval_deriv b σ)
+  | .And b0 b1 => b_deriv.and (b_eval_deriv b0 σ) (b_eval_deriv b1 σ)
+  | .Or  b0 b1 => b_deriv.or  (b_eval_deriv b0 σ) (b_eval_deriv b1 σ)

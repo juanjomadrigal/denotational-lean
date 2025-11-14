@@ -38,27 +38,26 @@ def a_equiv (a0 a1 : Aexp) : Prop :=
 
 /- Proposition 3.3 -/
 
--- fixme : simplify
-def a_unique (a : Aexp) (σ : State) : a_deriv (a,σ) n0 ∧ a_deriv (a,σ) n1 -> n0 = n1 := by
-  intro ⟨h0,h1⟩
-  cases a with
-  | Nat n => cases h0; cases h1; trivial
-  | Loc l => cases h0; cases h1; trivial
-  | Add a0 a1 => cases h0 with
-    | add h00 h01 => cases h1 with
-      | add h10 h11 =>
-        have f0 := a_unique a0 σ ⟨h00,h10⟩
-        have f1 := a_unique a1 σ ⟨h01,h11⟩
-        grind;
-  | Sub a0 a1 => cases h0 with
-    | sub h00 h01 => cases h1 with
-      | sub h10 h11 =>
-        have f0 := a_unique a0 σ ⟨h00,h10⟩
-        have f1 := a_unique a1 σ ⟨h01,h11⟩
-        grind;
-  | Mul a0 a1 => cases h0 with
-    | mul h00 h01 => cases h1 with
-      | mul h10 h11 =>
-        have f0 := a_unique a0 σ ⟨h00,h10⟩
-        have f1 := a_unique a1 σ ⟨h01,h11⟩
-        grind;
+theorem a_unique (a : Aexp) (σ : State) :
+    ∀ (n0 n1 : Nat) , a_deriv (a,σ) n0 ∧ a_deriv (a,σ) n1 -> n0 = n1 := by
+  induction a <;>
+  intro n0 n1 <;> intro ⟨h0,h1⟩ <;>
+  cases h0 <;> cases h1 <;> grind
+
+/- Exercise 3.4 -/
+
+def a_eval (a : Aexp) (σ : State) : Nat :=
+  match a with
+  | .Nat n => n
+  | .Loc l => State.lookup σ l
+  | .Add a0 a1 => a_eval a0 σ + a_eval a1 σ
+  | .Sub a0 a1 => a_eval a0 σ - a_eval a1 σ
+  | .Mul a0 a1 => a_eval a0 σ * a_eval a1 σ
+
+theorem a_eval_deriv (a : Aexp) (σ : State) : a_deriv (a,σ) (a_eval a σ) :=
+  match a with
+  | .Nat _ => a_deriv.num
+  | .Loc _ => a_deriv.loc
+  | .Add a0 a1 => a_deriv.add (a_eval_deriv a0 σ) (a_eval_deriv a1 σ)
+  | .Sub a0 a1 => a_deriv.sub (a_eval_deriv a0 σ) (a_eval_deriv a1 σ)
+  | .Mul a0 a1 => a_deriv.mul (a_eval_deriv a0 σ) (a_eval_deriv a1 σ)
