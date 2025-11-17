@@ -9,20 +9,22 @@ import Mathlib.Tactic
 /-! # 2.4 The execution of commands -/
 
 inductive c_deriv : Com -> State -> State -> Prop
-  | skip {σ} : c_deriv Com.Skip σ σ
-  | assign {a n l σ} : a_deriv a σ n -> c_deriv (Com.Assign l a) σ ((l,n)::σ)
-  | seq {c0 c1 σ σ' σ''} : c_deriv c0 σ σ'' -> c_deriv c1 σ'' σ' -> c_deriv (Com.Seq c0 c1) σ σ'
-  | ite_true  {b c0 c1 σ σ'} : b_deriv b σ true  -> c_deriv c0 σ σ' -> c_deriv (Com.Ite b c0 c1) σ σ'
-  | ite_false {b c0 c1 σ σ'} : b_deriv b σ false -> c_deriv c1 σ σ' -> c_deriv (Com.Ite b c0 c1) σ σ'
-  | while_false {b c σ} : b_deriv b σ false -> c_deriv (Com.While b c) σ σ
-  | while_true {b c σ σ' σ''} : b_deriv b σ true -> c_deriv c σ σ'' -> c_deriv (Com.While b c) σ'' σ' -> c_deriv (Com.While b c) σ σ'
+  | skip {σ} : c_deriv Skip σ σ
+  | assign {a n l σ} : a_deriv a σ n -> c_deriv (l ::= a) σ ((l,n)::σ)
+  | seq {c0 c1 σ σ' σ''} : c_deriv c0 σ σ'' -> c_deriv c1 σ'' σ' -> c_deriv (c0 ;; c1) σ σ'
+  | ite_true  {b c0 c1 σ σ'} : ⟨b,σ⟩ ~~> true  -> c_deriv c0 σ σ' -> c_deriv (If b Then c0 Else c1) σ σ'
+  | ite_false {b c0 c1 σ σ'} : ⟨b,σ⟩ ~~> false -> c_deriv c1 σ σ' -> c_deriv (If b Then c0 Else c1) σ σ'
+  | while_false {b c σ} : ⟨b,σ⟩ ~~> false -> c_deriv (While b Do c) σ σ
+  | while_true {b c σ σ' σ''} : ⟨b,σ⟩ ~~> true -> c_deriv c σ σ'' -> c_deriv (While b Do c) σ'' σ' -> c_deriv (While b Do c) σ σ'
+
+notation:40 "⟨" c:40 "," σ:40 "⟩" " ~~> " σ':40 => c_deriv c σ σ'
 
 def c_equiv (c0 c1 : Com) : Prop :=
-  ∀ (σ σ': State) , c_deriv c0 σ σ' <-> c_deriv c1 σ σ'
+  ∀ (σ σ': State) , ⟨c0,σ⟩ ~~> σ' <-> ⟨c1,σ⟩ ~~> σ'
 
 /- example: ⟨while true do skip, σ⟩ -> σ' is not achievable  -/
 
-example : ¬ ∃ (σ σ' : State) , c_deriv (While |true| Do Skip) σ σ' := by
+example : ¬ ∃ (σ σ' : State) , ⟨While |true| Do Skip,σ⟩ ~~> σ' := by
   intro ⟨σ,σ',h⟩
   generalize hcom : While |true| Do Skip = com
   rw [hcom] at h
@@ -49,7 +51,7 @@ example : c_equiv (While b Do c) (If b Then c ;; While b Do c Else Skip) := by
     cases d with
     | while_false bd => exact c_deriv.ite_false bd c_deriv.skip
     | while_true bd cd wcd =>
-      let h : c_deriv (c ;; While b Do c) σ σ' := c_deriv.seq cd wcd
+      let h : ⟨c ;; While b Do c, σ⟩ ~~> σ' := c_deriv.seq cd wcd
       exact c_deriv.ite_true bd h
   . intro d
     cases d with
@@ -74,7 +76,7 @@ def euclid : Com :=
 theorem euclid_deriv :
     ∀ (σ : State) ,
     σ{"M"} >= 1 ∧ σ{"N"} >= 1
-    -> ∃ (σ' : State) , c_deriv euclid σ σ'
+    -> ∃ (σ' : State) , ⟨euclid,σ⟩ ~~> σ'
 := by
   intro σ h
 
@@ -102,10 +104,10 @@ theorem euclid_deriv :
     by_cases hlt
     . have h2 : (m <= n) = true := by grind
       let σ'' := (N,n-m)::σ
-      have c1 : c_deriv (N ::= NsubM) σ σ'' := by
+      have c1 : ⟨N ::= NsubM, σ⟩ ~~> σ'' := by
         apply c_deriv.assign
         apply a_eval_deriv
-      have c : c_deriv (If MleN Then N ::= NsubM Else M ::= MsubN) σ σ'' := by
+      have c : ⟨If MleN Then N ::= NsubM Else M ::= MsubN, σ⟩ ~~> σ'' := by
         apply c_deriv.ite_true
         have hhh : (b_eval MleN σ) = true := by rw [b_eval,a_eval,a_eval]; grind
         have lll := b_eval_deriv MleN σ
@@ -121,10 +123,10 @@ theorem euclid_deriv :
       exact .while_true ev c p
     . have h2 : (m <= n) = false := by grind
       let σ'' := (M,m-n)::σ
-      have c1 : c_deriv (M ::= MsubN) σ σ'' := by
+      have c1 : ⟨M ::= MsubN, σ⟩ ~~> σ'' := by
         apply c_deriv.assign
         apply a_eval_deriv
-      have c : c_deriv (If MleN Then N ::= NsubM Else M ::= MsubN) σ σ'' := by
+      have c : ⟨If MleN Then N ::= NsubM Else M ::= MsubN, σ⟩ ~~> σ'' := by
         apply c_deriv.ite_false
         have hhh : (b_eval MleN σ) = false := by rw [b_eval,a_eval,a_eval]; grind
         have lll := b_eval_deriv MleN σ
@@ -143,7 +145,7 @@ theorem euclid_deriv :
 /- Theorem 3.11 -/
 
 theorem c_unique (c : Com) (σ : State) :
-  ∀ (σ0 σ1 : State) , c_deriv c σ σ0 ∧ c_deriv c σ σ1 -> σ0 = σ1
+  ∀ (σ0 σ1 : State) , ⟨c,σ⟩ ~~> σ0 ∧ ⟨c,σ⟩ ~~> σ1 -> σ0 = σ1
 := by
   intro σ0 σ1 ⟨h0,h1⟩
   induction h0 generalizing σ1 <;> cases h1 <;> grind [a_unique, b_unique]

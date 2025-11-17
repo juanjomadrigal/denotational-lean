@@ -6,20 +6,22 @@ import DenotationalLean.State
 /-! # 2.3 The evaluation of boolean expressions -/
 
 inductive b_deriv : Bexp -> State -> Bool -> Prop
-  | bool {t σ} : b_deriv (Bexp.Bool t) σ t
-  | eq {a0 n0 a1 n1 σ} : a_deriv a0 σ n0 -> a_deriv a1 σ n1 -> b_deriv (Bexp.Eq a0 a1) σ (n0 == n1)
-  | le {a0 n0 a1 n1 σ} : a_deriv a0 σ n0 -> a_deriv a1 σ n1 -> b_deriv (Bexp.Le a0 a1) σ (n0 <= n1)
-  | not {b t σ} : b_deriv b σ t -> b_deriv (Bexp.Not b) σ (!t)
-  | and {b0 t0 b1 t1 σ} : b_deriv b0 σ t0 -> b_deriv b1 σ t1 -> b_deriv (Bexp.And b0 b1) σ (t0 && t1)
-  | or  {b0 t0 b1 t1 σ} : b_deriv b0 σ t0 -> b_deriv b1 σ t1 -> b_deriv (Bexp.Or  b0 b1) σ (t0 || t1)
+  | bool {t σ} : b_deriv (|t|) σ t
+  | eq {a0 n0 a1 n1 σ} : ⟨a0,σ⟩ ~~> n0 -> ⟨a1,σ⟩ ~~> n1 -> b_deriv (a0 == a1) σ (n0 == n1)
+  | le {a0 n0 a1 n1 σ} : ⟨a0,σ⟩ ~~> n0 -> ⟨a1,σ⟩ ~~> n1 -> b_deriv (a0 <= a1) σ (n0 <= n1)
+  | not {b t σ} : b_deriv b σ t -> b_deriv (¬ b) σ (!t)
+  | and {b0 t0 b1 t1 σ} : b_deriv b0 σ t0 -> b_deriv b1 σ t1 -> b_deriv (b0 and b1) σ (t0 && t1)
+  | or  {b0 t0 b1 t1 σ} : b_deriv b0 σ t0 -> b_deriv b1 σ t1 -> b_deriv (b0 or  b1) σ (t0 || t1)
+
+notation:40 "⟨" b:40 "," σ:40 "⟩" " ~~> " σ':40 => b_deriv b σ σ'
 
 def b_equiv (b0 b1 : Bexp) : Prop :=
-  ∀ (t : Bool) (σ : State) , (b_deriv b0 σ t) <-> (b_deriv b1 σ t)
+  ∀ (t : Bool) (σ : State) , ⟨b0,σ⟩ ~~> t <-> ⟨b1,σ⟩ ~~> t
 
 /- Exercise 3.5 -/
 
 theorem b_unique (b : Bexp) (σ : State) :
-    ∀ (t0 t1 : Bool) , b_deriv b σ t0 ∧ b_deriv b σ t1 -> t0 = t1 := by
+    ∀ (t0 t1 : Bool) , ⟨b,σ⟩ ~~> t0 ∧ ⟨b,σ⟩ ~~> t1 -> t0 = t1 := by
   induction b <;>
   intro t0 t1 <;> intro ⟨h0,h1⟩ <;>
   cases h0 <;> cases h1 <;> grind [a_unique]
@@ -33,7 +35,7 @@ def b_eval (b : Bexp) (σ : State) : Bool :=
   | .And b0 b1 => b_eval b0 σ && b_eval b1 σ
   | .Or  b0 b1 => b_eval b0 σ || b_eval b1 σ
 
-theorem b_eval_deriv (b : Bexp) (σ : State) : b_deriv b σ (b_eval b σ) :=
+theorem b_eval_deriv (b : Bexp) (σ : State) : ⟨b,σ⟩ ~~> b_eval b σ :=
   match b with
   | .Bool _ => b_deriv.bool
   | .Eq a0 a1 => b_deriv.eq (a_eval_deriv a0 σ) (a_eval_deriv a1 σ)
