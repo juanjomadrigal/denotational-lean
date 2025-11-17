@@ -34,15 +34,15 @@ notation:70 b1:70 " and " b2:70 => Bexp.And b1 b2
 notation:70 b1:70 " or " b2:70 => Bexp.Or b1 b2
 
 inductive Com : Type where
-  | Skip : Com
+  | Skp : Com
   | Assign : Loc -> Aexp -> Com
   | Seq : Com -> Com -> Com
   | Ite : Bexp -> Com -> Com -> Com
-  | While : Bexp -> Com -> Com
+  | Wh : Bexp -> Com -> Com
 deriving Repr
 
-notation "Skip" => Com.Skip
+notation "Skip" => Com.Skp
 notation:60 l:60 "::=" a:60 => Com.Assign l a
 notation:60 c1:60 ";;" c2:60 => Com.Seq c1 c2
 notation:60 "If " b:60 " Then " c1:60 " Else " c2:60 => Com.Ite b c1 c2
-notation:60 "While " b:60 " Do " c:60 => Com.While b c
+notation:60 "While " b:60 " Do " c:60 => Com.Wh b c

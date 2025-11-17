@@ -31,12 +31,12 @@ example : ¬ ∃ (σ σ' : State) , ⟨While |true| Do Skip,σ⟩ ~~> σ' := by
   induction h with
   | skip | assign | seq | ite_true | ite_false => grind
   | while_false bd =>
-    simp only [Com.While.injEq] at hcom
+    simp only [Com.Wh.injEq] at hcom
     simp only [<-hcom] at bd
     nomatch bd
   | @while_true _ _ _ _ σ'' _ cd _ _ ih =>
     have h' : σ = σ'' := by cases cd <;> grind
-    simp only [Com.While.injEq] at hcom
+    simp only [Com.Wh.injEq] at hcom
     simp [<-hcom] at ih
 
 /-! # 2.5 A simple proof -/
@@ -149,3 +149,27 @@ theorem c_unique (c : Com) (σ : State) :
 := by
   intro σ0 σ1 ⟨h0,h1⟩
   induction h0 generalizing σ1 <;> cases h1 <;> grind [a_unique, b_unique]
+
+/- Proposition 4.7 -/
+
+def loc (c : Com) : Set Loc :=
+  match c with
+  | .Skp => ∅
+  | .Assign l _ => {l}
+  | .Seq c0 c1 => loc c0 ∪ loc c1
+  | .Ite _ c0 c1 => loc c0 ∪ loc c1
+  | .Wh _ c => loc c
+
+theorem loc_irrelev :
+  ∀ (Y : Loc) (c : Com) (σ σ' : State) ,
+  Y ∉ loc c ∧ ⟨c,σ⟩ ~~> σ' -> σ{Y} = σ'{Y}
+:= by
+  intro Y c
+  induction c with
+  | Skp | Assign | Seq | Ite =>
+    intro σ σ' ⟨h0,h1⟩ ; simp [loc] at h0 ; cases h1 <;> grind [State.lookup]
+  | Wh b c =>
+    intro σ σ' ⟨h0,h1⟩ ; simp [loc] at h0
+    generalize hcom : While b Do c = com
+    rw [hcom] at h1
+    induction h1 <;> grind
