@@ -139,3 +139,11 @@ theorem euclid_deriv :
       use σ'
       exact .while_true ev c p
   termination_by σ => (σ{"M"} , σ{"N"})
+
+/- Theorem 3.11 -/
+
+theorem c_unique (c : Com) (σ : State) :
+  ∀ (σ0 σ1 : State) , c_deriv c σ σ0 ∧ c_deriv c σ σ1 -> σ0 = σ1
+:= by
+  intro σ0 σ1 ⟨h0,h1⟩
+  induction h0 generalizing σ1 <;> cases h1 <;> grind [a_unique, b_unique]
