@@ -24,9 +24,9 @@ def c_equiv (c0 c1 : Com) : Prop :=
 
 /- example: ⟨while true do skip, σ⟩ -> σ' is not achievable  -/
 
-example : ¬ ∃ (σ σ' : State) , c_deriv (Com.While (Bexp.Bool true) Com.Skip, σ) σ' := by
+example : ¬ ∃ (σ σ' : State) , c_deriv (While |true| Do Skip, σ) σ' := by
   intro ⟨σ,σ',h⟩
-  generalize hcfg : (Com.While (Bexp.Bool true) Com.Skip, σ) = cfg
+  generalize hcfg : (While |true| Do Skip, σ) = cfg
   rw [hcfg] at h
   induction h with
   | skip | assign | seq | ite_true | ite_false => grind
@@ -43,15 +43,15 @@ example : ¬ ∃ (σ σ' : State) , c_deriv (Com.While (Bexp.Bool true) Com.Skip
 
 /- Proposition 2.8 -/
 
-example : c_equiv (Com.While b c) (Com.Ite b (Com.Seq c (Com.While b c)) Com.Skip) := by
-  let w := Com.While b c
+example : c_equiv (While b Do c) (If b Then c ;; While b Do c Else Skip) := by
+  let w := While b Do c
   intro σ σ'
   apply Iff.intro
   . intro d
     cases d with
     | while_false bd => exact c_deriv.ite_false bd c_deriv.skip
     | while_true bd cd wcd =>
-      let h : c_deriv (Com.Seq c (Com.While b c), σ) σ' := c_deriv.seq cd wcd
+      let h : c_deriv (c ;; While b Do c, σ) σ' := c_deriv.seq cd wcd
       exact c_deriv.ite_true bd h
   . intro d
     cases d with
@@ -69,13 +69,8 @@ example : c_equiv (Com.While b c) (Com.Ite b (Com.Seq c (Com.While b c)) Com.Ski
 
 /- euclid := while ¬(M=N) do if M < N then N:=N-M else M:=M-N -/
 def euclid : Com :=
-  Com.While
-    (Bexp.Not (Bexp.Eq (Aexp.Loc "M") (Aexp.Loc "N")))
-    (Com.Ite
-      (Bexp.Le (Aexp.Loc "M") (Aexp.Loc "N"))
-      (Com.Assign "N" (Aexp.Sub (Aexp.Loc "N") (Aexp.Loc "M")))
-      (Com.Assign "M" (Aexp.Sub (Aexp.Loc "M") (Aexp.Loc "N")))
-    )
+  While ¬ #"M" == #"N"
+  Do (If (#"M" <= #"N") Then ("N" ::= #"N" - #"M") Else ("M" ::= #"M" - #"N"))
 
 -- fixme : to simplify a lot
 theorem euclid_deriv :
@@ -90,39 +85,35 @@ theorem euclid_deriv :
   let m := σ{M}
   let n := σ{N}
 
-  let MsubN := Aexp.Sub (Aexp.Loc M) (Aexp.Loc N)
-  let NsubM := Aexp.Sub (Aexp.Loc N) (Aexp.Loc M)
-  let MeqN := Bexp.Eq (Aexp.Loc M) (Aexp.Loc N)
-  let MleN := Bexp.Le (Aexp.Loc M) (Aexp.Loc N)
+  let MsubN := #M - #N
+  let NsubM := #N - #M
+  let MeqN := #M == #N
+  let MleN := #M <= #N
 
   let heq := m = n
   by_cases heq
-  . have ev := b_eval_deriv (Bexp.Not MeqN) σ
+  . have ev := b_eval_deriv (¬ MeqN) σ
     have h1 : (m == n) = true := by grind
     simp [b_eval,a_eval,m,n,h1,MeqN] at ev
     use σ
     exact .while_false ev
-  . have ev := b_eval_deriv (Bexp.Not MeqN) σ
+  . have ev := b_eval_deriv (¬ MeqN) σ
     have h1 : (m == n) = false := by grind
     simp [b_eval,a_eval,m,n,h1,MeqN] at ev
     let hlt := m <= n
     by_cases hlt
     . have h2 : (m <= n) = true := by grind
       let σ'' := (N,n-m)::σ
-      have c1 : c_deriv (
-        (Com.Assign N NsubM), σ) σ'' := by
-          apply c_deriv.assign
-          apply a_eval_deriv
-      have c : c_deriv (Com.Ite
-        MleN
-        (Com.Assign N NsubM)
-        (Com.Assign M MsubN), σ) σ'' := by
-          apply c_deriv.ite_true
-          have hhh : (b_eval MleN σ) = true := by rw [b_eval,a_eval,a_eval]; grind
-          have lll := b_eval_deriv MleN σ
-          simp [hhh] at lll
-          trivial
-          exact c1
+      have c1 : c_deriv (N ::= NsubM, σ) σ'' := by
+        apply c_deriv.assign
+        apply a_eval_deriv
+      have c : c_deriv (If MleN Then N ::= NsubM Else M ::= MsubN, σ) σ'' := by
+        apply c_deriv.ite_true
+        have hhh : (b_eval MleN σ) = true := by rw [b_eval,a_eval,a_eval]; grind
+        have lll := b_eval_deriv MleN σ
+        simp [hhh] at lll
+        trivial
+        exact c1
       have q1 : σ''{M} = m := by rw [State.lookup]; grind
       have q2 : σ''{N} = n-m := by rw [State.lookup]; grind
       have q : σ''{M} >= 1 ∧ σ''{N} >= 1 := by grind
@@ -132,20 +123,16 @@ theorem euclid_deriv :
       exact .while_true ev c p
     . have h2 : (m <= n) = false := by grind
       let σ'' := (M,m-n)::σ
-      have c1 : c_deriv (
-        (Com.Assign M MsubN), σ) σ'' := by
-          apply c_deriv.assign
-          apply a_eval_deriv
-      have c : c_deriv (Com.Ite
-        MleN
-        (Com.Assign N NsubM)
-        (Com.Assign M MsubN), σ) σ'' := by
-          apply c_deriv.ite_false
-          have hhh : (b_eval MleN σ) = false := by rw [b_eval,a_eval,a_eval]; grind
-          have lll := b_eval_deriv MleN σ
-          simp [hhh] at lll
-          trivial
-          exact c1
+      have c1 : c_deriv (M ::= MsubN, σ) σ'' := by
+        apply c_deriv.assign
+        apply a_eval_deriv
+      have c : c_deriv (If MleN Then N ::= NsubM Else M ::= MsubN, σ) σ'' := by
+        apply c_deriv.ite_false
+        have hhh : (b_eval MleN σ) = false := by rw [b_eval,a_eval,a_eval]; grind
+        have lll := b_eval_deriv MleN σ
+        simp [hhh] at lll
+        trivial
+        exact c1
       have q1 : σ''{M} = m-n := by rw [State.lookup]; grind
       have q2 : σ''{N} = n := by rw [State.lookup]; grind
       have q : σ''{M} >= 1 ∧ (σ''{N}) >= 1 := by grind

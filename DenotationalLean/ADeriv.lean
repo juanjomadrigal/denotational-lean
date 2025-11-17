@@ -16,9 +16,7 @@ inductive a_deriv : Config -> Nat -> Prop
 
 /- example : ⟨(Init + 5) + (7 + 9), σ_0⟩ -> 21 -/
 example : a_deriv
-    (Aexp.Add
-      (Aexp.Add (Aexp.Loc "Init") (Aexp.Nat 5))
-      (Aexp.Add (Aexp.Nat 7) (Aexp.Nat 9)),
+    ((#"Init" + |5|) + (|7| + |9|),
     [("Init",0)])
     21 := by
   let σ := [("Init",0)]
