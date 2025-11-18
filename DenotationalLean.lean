@@ -3,5 +3,6 @@
 import DenotationalLean.ADeriv
 import DenotationalLean.BDeriv
 import DenotationalLean.CDeriv
+import DenotationalLean.Denot
 import DenotationalLean.Imp
 import DenotationalLean.State
