@@ -5,6 +5,7 @@ import DenotationalLean.State
 
 /-! # 2.3 The evaluation of boolean expressions -/
 
+@[grind]
 inductive b_deriv : Bexp -> State -> Bool -> Prop
   | bool {t σ} : b_deriv (|t|) σ t
   | eq {a0 n0 a1 n1 σ} : ⟨a0,σ⟩ ~~> n0 -> ⟨a1,σ⟩ ~~> n1 -> b_deriv (a0 == a1) σ (n0 == n1)
@@ -20,12 +21,14 @@ def b_equiv (b0 b1 : Bexp) : Prop :=
 
 /- Exercise 3.5 -/
 
+@[simp, grind]
 theorem b_unique (b : Bexp) (σ : State) :
     ∀ (t0 t1 : Bool) , ⟨b,σ⟩ ~~> t0 ∧ ⟨b,σ⟩ ~~> t1 -> t0 = t1 := by
   induction b <;>
   intro t0 t1 <;> intro ⟨h0,h1⟩ <;>
-  cases h0 <;> cases h1 <;> grind [a_unique]
+  cases h0 <;> cases h1 <;> grind
 
+@[simp, grind]
 def b_eval (b : Bexp) (σ : State) : Bool :=
   match b with
   | .Bool t => t
@@ -35,6 +38,7 @@ def b_eval (b : Bexp) (σ : State) : Bool :=
   | .And b0 b1 => b_eval b0 σ && b_eval b1 σ
   | .Or  b0 b1 => b_eval b0 σ || b_eval b1 σ
 
+@[simp, grind]
 theorem b_eval_deriv (b : Bexp) (σ : State) : ⟨b,σ⟩ ~~> b_eval b σ :=
   match b with
   | .Bool _ => b_deriv.bool

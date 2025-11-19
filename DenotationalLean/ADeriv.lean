@@ -4,6 +4,7 @@ import DenotationalLean.State
 
 /-! # 2.2 The evaluation of arithmetic expressions -/
 
+@[grind]
 inductive a_deriv : Aexp -> State -> Nat -> Prop
   | num {n σ} : a_deriv (Aexp.Nat n) σ n
   | loc {l σ} : a_deriv (Aexp.Loc l) σ (State.lookup σ l)
@@ -31,6 +32,7 @@ def a_equiv (a0 a1 : Aexp) : Prop :=
 
 /- Proposition 3.3 -/
 
+@[simp, grind]
 theorem a_unique (a : Aexp) (σ : State) :
     ∀ (n0 n1 : Nat) , ⟨a,σ⟩ ~~> n0 ∧ ⟨a,σ⟩ ~~> n1 -> n0 = n1 := by
   induction a <;>
@@ -39,6 +41,7 @@ theorem a_unique (a : Aexp) (σ : State) :
 
 /- Exercise 3.4 -/
 
+@[simp, grind]
 def a_eval (a : Aexp) (σ : State) : Nat :=
   match a with
   | .Nat n => n
@@ -47,6 +50,7 @@ def a_eval (a : Aexp) (σ : State) : Nat :=
   | .Sub a0 a1 => a_eval a0 σ - a_eval a1 σ
   | .Mul a0 a1 => a_eval a0 σ * a_eval a1 σ
 
+@[simp, grind]
 theorem a_eval_deriv (a : Aexp) (σ : State) : ⟨a,σ⟩ ~~> a_eval a σ :=
   match a with
   | .Nat _ => a_deriv.num

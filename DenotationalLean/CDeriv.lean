@@ -8,6 +8,7 @@ import Mathlib.Tactic
 
 /-! # 2.4 The execution of commands -/
 
+@[grind]
 inductive c_deriv : Com -> State -> State -> Prop
   | skip {σ} : c_deriv Skip σ σ
   | assign {a n l σ} : a_deriv a σ n -> c_deriv (l ::= a) σ ((l,n)::σ)
@@ -144,11 +145,12 @@ theorem euclid_deriv :
 
 /- Theorem 3.11 -/
 
+@[simp, grind]
 theorem c_unique (c : Com) (σ : State) :
   ∀ (σ0 σ1 : State) , ⟨c,σ⟩ ~~> σ0 ∧ ⟨c,σ⟩ ~~> σ1 -> σ0 = σ1
 := by
   intro σ0 σ1 ⟨h0,h1⟩
-  induction h0 generalizing σ1 <;> cases h1 <;> grind [a_unique, b_unique]
+  induction h0 generalizing σ1 <;> cases h1 <;> grind
 
 /- Proposition 4.7 -/
 
