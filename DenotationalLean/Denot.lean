@@ -126,3 +126,66 @@ theorem c_denot_equiv :
       let ⟨n,_⟩ := hh
       apply aux n σ σ'
       grind
+
+/- Proposition 5.1 -/
+
+lemma fix_inc :
+  ∀ (b : Bexp) (c : Com) (s0 s1 : Set (State × State)) , s0 ⊆ s1 -> fix_wh b c s0 ⊆ fix_wh b c s1
+:= by grind [fix_wh]
+
+lemma fix_app :
+  ∀ (b : Bexp) (c : Com) , (fix_wh b c) (fix (fix_wh b c)) = fix (fix_wh b c)
+:= by
+  intro b c
+  apply Set.ext
+  intro ⟨σ,σ'⟩
+  apply Iff.intro
+  . intro h
+    simp [fix_wh] at h
+    cases h with
+    | inl h =>
+      let ⟨h1,⟨σ'',⟨h2,h3⟩⟩⟩ := h
+      simp [fix] at h3
+      let ⟨n,h4⟩ := h3
+      simp [fix]
+      use n+1
+      rw [Function.iterate_succ']
+      simp [fix_wh]
+      apply Or.inl
+      grind
+    | inr =>
+      simp [fix]
+      use 1
+      simp [fix_wh] ; trivial
+  . intro h
+    simp [fix] at h
+    let ⟨n,h1⟩ := h
+    cases n with
+    | zero => simp [Nat.iterate] at h1
+    | succ m =>
+      rw [Function.iterate_succ'] at h1
+      have aux :
+        fix_wh b c ((fix_wh b c)^[m] ∅)  ⊆ fix_wh b c (fix (fix_wh b c))
+      := by
+        apply fix_inc b c
+        simp [fix]
+        exact Set.subset_iUnion (fun n => (fix_wh b c)^[n] ∅) m
+      rw [Set.subset_def] at aux
+      grind
+
+example :
+  c_denot_set (While b Do c) = c_denot_set (If b Then c ;; While b Do c Else Skip)
+:= by
+  have aux1 : ∀ (σ σ' : State) , σ = σ' <-> (σ,σ') ∈ c_denot_set Skip := by simp
+  have aux2 : ∀ (σ σ' : State) , {(σ,σ') | (b_eval b σ = false) ∧ (σ' = σ)}
+    = {(σ,σ') | (b_eval b σ = false) ∧ ((σ,σ') ∈ c_denot_set Skip)} := by grind
+  calc
+    c_denot_set (While b Do c)
+      = fix (fix_wh b c) := by rfl
+    _ = (fix_wh b c) (fix (fix_wh b c)) := by grind [fix_app]
+    _ = {(σ,σ') | (b_eval b σ = true) ∧
+        ∃ (σ'' : State) , (σ,σ'') ∈ c_denot_set c ∧ (σ'',σ') ∈ fix (fix_wh b c)}
+      ∪ {(σ,σ') | (b_eval b σ = false) ∧ σ' = σ} := by grind [fix_wh]
+    _ = {(σ,σ') | (b_eval b σ = true) ∧ (σ,σ') ∈ c_denot_set (c ;; While b Do c) }
+      ∪ {(σ,σ') | (b_eval b σ = false) ∧ (σ,σ') ∈ c_denot_set Skip} := by grind
+    _ = c_denot_set (If b Then c ;; While b Do c Else Skip) := by grind
