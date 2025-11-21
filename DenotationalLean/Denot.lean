@@ -2,8 +2,6 @@ import DenotationalLean.ADeriv
 import DenotationalLean.BDeriv
 import DenotationalLean.CDeriv
 
-import Mathlib.Data.Part
-
 open Classical
 
 @[simp, grind]
