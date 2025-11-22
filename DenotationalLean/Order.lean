@@ -1,5 +1,7 @@
 import Mathlib.Tactic
 
+open Classical
+
 class PO (P : Type u) where
   ple : P → P → Prop
   po_ref : ∀ (p : P) , ple p p
@@ -58,4 +60,49 @@ instance powCPOB : CPOB (Set P) where
     intro n
     apply Set.subset_iUnion
   bot := ∅
+  is_bot := by grind
+
+instance partCPOB : CPOB (X -> Option X) where
+  ple p q := ∀ (x : X) , p x = none ∨ p x = q x
+  po_ref := by grind
+  po_trans := by grind
+  po_antisym := by
+    intro p q h1 h2
+    apply funext
+    grind
+  chain_lub := by
+    intro d h
+    let p : X -> Option X := fun x =>
+      let ns := {n : Nat | d n x ≠ none}
+      if h : ns.Nonempty then
+        d (Nat.find h) x
+      else
+        none
+    exists p
+    have aux1 :
+      ∀ (m n : Nat) (x : X) , m >= n -> d n x = none ∨ d m x = d n x
+    := by
+      intro m
+      induction m with
+      | zero => grind
+      | succ mm =>
+        intro n x
+        have _ : d mm x = none ∨ d mm x = d (mm + 1) x := by grind [omega_chain]
+        grind
+    have aux2 :
+      ∀ (m n : Nat) (x : X) , d m x ≠ none ∧ d n x ≠ none -> d m x = d n x
+    := by grind
+    have aux3 :
+      ∀ (n : Nat) (x : X) , d n x = none ∨ d n x = p x
+    := by
+      intro n x
+      cases _ : d n x with
+      | none => grind
+      | some y =>
+        simp [p]
+        exists ⟨n, by grind⟩
+        grind
+    simp [least_upper_bound, upper_bound]
+    grind
+  bot := fun _ => none
   is_bot := by grind
