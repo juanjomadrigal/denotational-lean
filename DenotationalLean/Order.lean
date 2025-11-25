@@ -19,19 +19,29 @@ def least_upper_bound {P : Type u} [PO P] (X : Set P) (p : P) : Prop :=
 def omega_chain {P : Type u} [PO P] (d : Nat -> P) : Prop :=
   ∀ (n : Nat) , d n ⊑ d (n+1)
 
+def OmegaChain (P : Type u) [PO P] :=
+  {d : Nat -> P // omega_chain d}
+
+instance [PO P] : CoeFun (OmegaChain P) (fun _ => Nat -> P) where
+  coe | ⟨d, _⟩ => d
+
 class CPO (P : Type u) extends PO P where
   chain_lub : ∀ (d : Nat -> P) , omega_chain d ->
     ∃ (p : P) , least_upper_bound {d n | n : Nat} p
+
+noncomputable def lub {P : Type u} [CPO P] (d : OmegaChain P) : P :=
+  choose (CPO.chain_lub d.val d.prop)
+notation:60 "⨆" d:60 => lub d
 
 class CPOB (P : Type u) extends CPO P where
   bot : P
   is_bot : ∀ (p : P) , bot ⊑ p
 
-notation:50 "⊥" => CPOB.bot
+notation "⊥" => CPOB.bot
 
 /- Exercise 5.10 -/
 
-instance flatCPO : CPO P where
+def flatCPO : CPO P where
   ple p q := p = q
   po_ref := by grind
   po_trans := by grind
@@ -106,3 +116,35 @@ instance partCPOB : CPOB (X -> Option X) where
     grind
   bot := fun _ => none
   is_bot := by grind
+
+def monotonic {P Q : Type u} [CPO P] [CPO Q] (f : P -> Q) : Prop :=
+  ∀ (p p' : P) , p ⊑ p' -> f p ⊑ f p'
+
+def Monotonic (P Q : Type u) [CPO P] [CPO Q] :=
+  {f : P -> Q // monotonic f}
+
+instance [CPO P] [CPO Q] : CoeFun (Monotonic P Q) (fun _ => P -> Q) where
+  coe | ⟨f, _⟩ => f
+
+def map {P Q : Type u} [CPO P] [CPO Q]
+  (f : Monotonic P Q) (d : OmegaChain P) : OmegaChain Q
+:= ⟨
+  fun n => f (d n),
+  by
+    simp [omega_chain]
+    intro n
+    apply f.prop
+    apply d.prop
+⟩
+
+def cont {P Q : Type u} [CPO P] [CPO Q] (f : Monotonic P Q) : Prop :=
+  ∀ (d : OmegaChain P) , ⨆ (map f d) = f (⨆ d)
+
+def Cont (P Q : Type u) [CPO P] [CPO Q] :=
+  {f : Monotonic P Q // cont f}
+
+instance [CPO P] [CPO Q] : Coe (Cont P Q) (Monotonic P Q) where
+  coe | ⟨f, _⟩ => f
+
+instance [CPO P] [CPO Q] : CoeFun (Cont P Q) (fun _ => P -> Q) where
+  coe | f => (f : Monotonic P Q)
