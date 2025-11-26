@@ -5,5 +5,6 @@ import DenotationalLean.BDeriv
 import DenotationalLean.CDeriv
 import DenotationalLean.Denot
 import DenotationalLean.Imp
-import DenotationalLean.Order
+import DenotationalLean.Order.PartialOrder
+import DenotationalLean.Order.Functions
 import DenotationalLean.State
