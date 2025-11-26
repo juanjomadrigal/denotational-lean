@@ -30,6 +30,11 @@ def OmegaChain (P : Type u) [PO P] :=
 instance [PO P] : CoeFun (OmegaChain P) (fun _ => Nat -> P) where
   coe | ⟨d, _⟩ => d
 
+namespace OmegaChain
+@[simp, grind]
+def set {P : Type u} [PO P] (d : OmegaChain P) : Set P := {d n | n : Nat}
+end OmegaChain
+
 class CPO (P : Type u) extends PO P where
   chain_lub : ∀ (d : Nat -> P) , omega_chain d ->
     ∃ (p : P) , least_upper_bound {d n | n : Nat} p
@@ -166,7 +171,7 @@ notation:60 "⨆" d:60 => lub_chain d
 
 @[simp, grind]
 theorem lub_set_chain :
-  lub_set {d n | n : Nat} = some (lub_chain d)
+  lub_set d.set = some (lub_chain d)
 := by
   simp only [lub_set]
   grind [lub_chain]
@@ -226,7 +231,7 @@ def insert_bottom_chain (d : OmegaChain P) : OmegaChain P
 ⟩
 
 lemma insert_bottom_chain_set (d : OmegaChain P) :
-  insert CPOB.bot {d n | n : Nat} = {(insert_bottom_chain d) n | n : Nat}
+  insert CPOB.bot d.set = (insert_bottom_chain d).set
 := by
   simp [insert_bottom_chain]
   apply Set.ext
@@ -245,9 +250,9 @@ lemma insert_bottom_chain_lub (d : OmegaChain P) : ⨆ insert_bottom_chain d = �
   have _ : some (⨆ insert_bottom_chain d) = some (⨆ d) := by
     calc
       some (⨆ insert_bottom_chain d)
-      _ = lub_set {(insert_bottom_chain d) n | n : Nat} := by grind
-      _ = lub_set (insert CPOB.bot {d n | n : Nat}) := by have _ := insert_bottom_chain_set d ; grind
-      _ = lub_set {d n | n : Nat} := by grind
+      _ = lub_set (insert_bottom_chain d).set := by grind
+      _ = lub_set (insert CPOB.bot d.set) := by have _ := insert_bottom_chain_set d ; grind
+      _ = lub_set d.set := by grind
       _ = some (⨆ d) := by grind
   grind
 
