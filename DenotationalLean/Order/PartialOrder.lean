@@ -13,6 +13,7 @@ class PO (P : Type u) where
 
 notation:50 p:50 "⊑" q:50 => PO.ple p q
 
+@[simp, grind]
 def upper_bound {P : Type u} [PO P] (X : Set P) (p : P) : Prop :=
   ∀ (q : P) , q ∈ X -> q ⊑ p
 
@@ -62,8 +63,6 @@ local instance flatCPO : CPO P where
       intro n
       induction n <;> grind
     simp [h1]
-    exists d 0
-    simp [upper_bound]
 
 instance powCPOB : CPOB (Set P) where
   ple p q := p ⊆ q
@@ -76,7 +75,7 @@ instance powCPOB : CPOB (Set P) where
   chain_lub := by
     intro d h
     exists ⋃ n:Nat , d n
-    simp [upper_bound]
+    simp
     intro n
     apply Set.subset_iUnion
   bot := ∅
@@ -122,7 +121,7 @@ instance partCPOB : CPOB (X -> Option X) where
         simp [p]
         exists ⟨n, by grind⟩
         grind
-    simp [upper_bound]
+    simp
     grind
   bot := fun _ => none
   is_bot := by grind
@@ -187,18 +186,13 @@ lemma bottom_least_upper_bound (X : Set P) (p : P) :
 := by
   apply Iff.intro
   . intro h
-    simp
-    apply And.intro
-    . grind [upper_bound, CPOB.is_bot]
-    . intro q h
-      have _ : upper_bound X q := by grind [upper_bound]
-      grind
+    grind [CPOB.is_bot]
   . intro h
     simp
     apply And.intro
-    . grind [upper_bound]
+    . grind
     . intro q h
-      have _ : upper_bound (insert CPOB.bot X) q := by grind [upper_bound, CPOB.is_bot]
+      have _ : upper_bound (insert CPOB.bot X) q := by grind [CPOB.is_bot]
       grind
 
 @[simp, grind]
@@ -264,6 +258,7 @@ section GreatestLowerBound
 
 variable {P : Type u} [PO P] (X : Set P)
 
+@[simp, grind]
 def lower_bound (p : P) : Prop :=
   ∀ (q : P) , q ∈ X -> p ⊑ q
 
@@ -296,44 +291,50 @@ theorem glb_set_correct :
     grind [choose_spec, unique_glb]
 
 -- complete lattice
-class CL (P : Type u) extends PO P where
-  glb : ∀ (X : Set P) , ∃ (p : P) , greatest_lower_bound X p
-  lub : ∀ (X : Set P) , ∃ (p : P) , least_upper_bound X p
+class CL (L : Type u) extends PO L where
+  glb_ex : ∀ (X : Set L) , ∃ (p : L) , greatest_lower_bound X p
+  lub_ex : ∀ (X : Set L) , ∃ (p : L) , least_upper_bound X p
+
+noncomputable def CL.glb {L : Type u} [CL L] (X : Set L) : L :=
+  choose <| CL.glb_ex X
+
+noncomputable def CL.lub {L : Type u} [CL L] (X : Set L) : L :=
+  choose <| CL.lub_ex X
 
 end GreatestLowerBound
 
 section Dual
 
-def Dual (P : Type*) : Type _ := P
+def Dual (P : Type u) : Type u := P
 
-instance dualPO (P : Type*) [inst : PO P] : PO (Dual P) where
+instance dualPO [inst : PO P] : PO (Dual P) where
   ple p q := inst.ple q p
   po_ref := inst.po_ref
   po_trans := by intro p q r h1 h2 ; exact inst.po_trans r q p h2 h1
   po_antisym := by intro p q h1 h2 ; exact inst.po_antisym p q h2 h1
 
 lemma dual_ub_lb {P : Type u} [inst : PO P] (X : Set P) (p : P) :
-  @upper_bound P inst X p <-> @lower_bound P (dualPO P) X p
+  @upper_bound P inst X p <-> @lower_bound P dualPO X p
 := by
   apply Iff.intro <;> exact id
 
 lemma dual_lb_ub {P : Type u} [inst : PO P] (X : Set P) (p : P) :
-  @lower_bound P inst X p <-> @upper_bound P (dualPO P) X p
+  @lower_bound P inst X p <-> @upper_bound P dualPO X p
 := by
   apply Iff.intro <;> exact id
 
 lemma dual_lub_glb {P : Type u} [inst : PO P] (X : Set P) (p : P) :
-  @least_upper_bound P inst X p <-> @greatest_lower_bound P (dualPO P) X p
+  @least_upper_bound P inst X p <-> @greatest_lower_bound P dualPO X p
 := by
   apply Iff.intro <;> exact id
 
 lemma dual_glb_lub {P : Type u} [inst : PO P] (X : Set P) (p : P) :
-  @greatest_lower_bound P inst X p <-> @least_upper_bound P (dualPO P) X p
+  @greatest_lower_bound P inst X p <-> @least_upper_bound P dualPO X p
 := by
   apply Iff.intro <;> exact id
 
 instance dualCL [inst : CL P] : CL (Dual P) where
-  glb := inst.lub
-  lub := inst.glb
+  glb_ex := inst.lub_ex
+  lub_ex := inst.glb_ex
 
 end Dual
