@@ -259,3 +259,81 @@ lemma insert_bottom_chain_lub (d : OmegaChain P) : ⨆ insert_bottom_chain d = �
 end Bottom
 
 end LeastUpperBound
+
+section GreatestLowerBound
+
+variable {P : Type u} [PO P] (X : Set P)
+
+def lower_bound (p : P) : Prop :=
+  ∀ (q : P) , q ∈ X -> p ⊑ q
+
+@[simp, grind]
+def greatest_lower_bound (p : P) : Prop :=
+  lower_bound X p ∧ ∀ (q : P) , lower_bound X q -> q ⊑ p
+
+theorem unique_glb :
+  ∀ (p q : P) , greatest_lower_bound X p ∧ greatest_lower_bound X q -> p = q
+:= by
+  grind [PO.po_antisym]
+
+@[simp, grind]
+noncomputable def glb_set : Option P :=
+  if h : ∃ (p : P) , greatest_lower_bound X p
+    then some (choose h)
+    else none
+
+@[simp, grind]
+theorem glb_set_correct :
+  ∀ (p : P) , greatest_lower_bound X p <-> glb_set X = some p
+:= by
+  intro p
+  apply Iff.intro
+  . intro h
+    simp
+    use ⟨p,h⟩
+    grind [choose_spec, unique_glb]
+  . simp
+    grind [choose_spec, unique_glb]
+
+-- complete lattice
+class CL (P : Type u) extends PO P where
+  glb : ∀ (X : Set P) , ∃ (p : P) , greatest_lower_bound X p
+  lub : ∀ (X : Set P) , ∃ (p : P) , least_upper_bound X p
+
+end GreatestLowerBound
+
+section Dual
+
+def Dual (P : Type*) : Type _ := P
+
+instance dualPO (P : Type*) [inst : PO P] : PO (Dual P) where
+  ple p q := inst.ple q p
+  po_ref := inst.po_ref
+  po_trans := by intro p q r h1 h2 ; exact inst.po_trans r q p h2 h1
+  po_antisym := by intro p q h1 h2 ; exact inst.po_antisym p q h2 h1
+
+lemma dual_ub_lb {P : Type u} [inst : PO P] (X : Set P) (p : P) :
+  @upper_bound P inst X p <-> @lower_bound P (dualPO P) X p
+:= by
+  apply Iff.intro <;> exact id
+
+lemma dual_lb_ub {P : Type u} [inst : PO P] (X : Set P) (p : P) :
+  @lower_bound P inst X p <-> @upper_bound P (dualPO P) X p
+:= by
+  apply Iff.intro <;> exact id
+
+lemma dual_lub_glb {P : Type u} [inst : PO P] (X : Set P) (p : P) :
+  @least_upper_bound P inst X p <-> @greatest_lower_bound P (dualPO P) X p
+:= by
+  apply Iff.intro <;> exact id
+
+lemma dual_glb_lub {P : Type u} [inst : PO P] (X : Set P) (p : P) :
+  @greatest_lower_bound P inst X p <-> @least_upper_bound P (dualPO P) X p
+:= by
+  apply Iff.intro <;> exact id
+
+instance dualCL [inst : CL P] : CL (Dual P) where
+  glb := inst.lub
+  lub := inst.glb
+
+end Dual
